@@ -148,6 +148,9 @@ class FakePub:
     def validate(self, t, s):
         return []
 
+    def secrets_needed(self, account):
+        return []
+
     def publish(self, t, ctx):
         self.calls.append(t.key)
         if self.fail:
@@ -398,7 +401,7 @@ def test_drive_order_titles_and_skips(proj, monkeypatch):
     (proj / "config" / "accounts.yaml").write_text(CONFIG + DRIVE_CFG)
     drive, downloads = drive_fake(monkeypatch)
     s, st = load_settings(proj), State(proj / "state" / "posted.json")
-    sec, quiet = Secrets({"GOOGLE_API_KEY": "KEY"}), (lambda *a: None)
+    sec, quiet = Secrets({"SECRETS_JSON": SECRETS._env["SECRETS_JSON"], "GOOGLE_API_KEY": "KEY"}), (lambda *a: None)
 
     order = [(v["id"], v["episode"], v["part"]) for v in drive.collect(
         {**drive.DEFAULTS, **s.drive_daily}, "KEY", quiet)]
@@ -433,7 +436,7 @@ def test_drive_skips_full_episode_in_shorts_folder(proj, monkeypatch):
     try:
         drive, _ = drive_fake(monkeypatch)
         s, st = load_settings(proj), State(proj / "state" / "posted.json")
-        drive.sync(s, Secrets({"GOOGLE_API_KEY": "K"}), st, datetime(2026, 12, 1, 3, tzinfo=timezone.utc),
+        drive.sync(s, Secrets({"SECRETS_JSON": SECRETS._env["SECRETS_JSON"], "GOOGLE_API_KEY": "K"}), st, datetime(2026, 12, 1, 3, tzinfo=timezone.utc),
                    lambda *a: None)
         assert load_posts(s)[0].targets[0].fields["video"] == "drive:s1.mp4"
     finally:
@@ -447,3 +450,16 @@ def test_public_url_for_drive_media(proj):
     s.media_base_url = ""
     assert public_url(s, "drive:v2.mp4", Secrets({"GOOGLE_API_KEY": "KEY"})) == \
         "https://www.googleapis.com/drive/v3/files/v2?alt=media&key=KEY"
+
+
+def test_quiet_until_connected(proj, monkeypatch):
+    from autopost import drive
+    (proj / "config" / "accounts.yaml").write_text(CONFIG + DRIVE_CFG)
+    s, st = load_settings(proj), State(proj / "state" / "posted.json")
+    now = datetime(2026, 12, 1, 3, tzinfo=timezone.utc)
+    assert drive.sync(s, Secrets({}), st, now, lambda *a: None) == 0                       # no key
+    assert drive.sync(s, Secrets({"GOOGLE_API_KEY": "K"}), st, now, lambda *a: None) == 0  # no accounts
+    assert not (proj / "state" / "drive.json").exists()                                    # nothing used up
+    write_post(proj, "p.yaml", "id: p\npublish_at: 2026-12-01 08:00\ntargets: [{account: xa, text: hi}]")
+    assert run(s, Secrets({}), st, now=now, log=lambda *a: None) == 0                      # waits, no failure
+    assert st.status("p::xa") == "pending"

@@ -22,6 +22,7 @@ import requests
 import yaml
 
 from .config import Secrets, Settings
+from .platforms import PUBLISHERS
 from .platforms.base import PublishError, http, local_path
 from .platforms.x import weighted_length
 from .posts import load_posts
@@ -255,7 +256,17 @@ def sync(settings: Settings, secrets: Secrets, state: State, now: datetime, log=
     if not settings.drive_daily or not cfg.get("enabled", True) or not cfg.get("sources"):
         log("Drive daily posting is off (set drive_daily in config/accounts.yaml).")
         return 0
-    key = secrets.get("GOOGLE_API_KEY")
+    key = secrets.get("GOOGLE_API_KEY", required=False)
+    if not key:
+        log("Drive daily posting is waiting for the GOOGLE_API_KEY secret (README section 5a).")
+        return 0
+    connected = [a for a in settings.resolve_targets(cfg.get("accounts") or list(settings.accounts))
+                 if all(secrets.has(*alts) for alts in
+                        PUBLISHERS[settings.accounts[a].platform].secrets_needed(settings.accounts[a]))]
+    if not connected:
+        log("Drive daily posting is waiting: none of its accounts are connected yet, "
+            "so no video is used up.")
+        return 0
     root = settings.root
     dstate_path = root / "state" / "drive.json"
     dstate = json.loads(dstate_path.read_text()) if dstate_path.exists() else {}

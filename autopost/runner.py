@@ -31,7 +31,15 @@ def validate_all(settings: Settings, secrets: Secrets | None = None,
             if hasattr(pub, "warnings"):
                 warnings += [f"{where}: {w}" for w in pub.warnings(t)]
     if secrets is not None:
-        used = {t.account for p in posts for t in p.targets} or set(settings.accounts)
+        used = {t.account for p in posts for t in p.targets
+                if state is None or state.status(t.key) not in DONE}
+        dd = settings.drive_daily
+        if dd and dd.get("enabled", True) and dd.get("sources"):
+            used |= set(settings.resolve_targets(dd.get("accounts") or list(settings.accounts)))
+            if not secrets.has("GOOGLE_API_KEY"):
+                errors.append("Drive daily posting: missing secret GOOGLE_API_KEY")
+        if not used:
+            used = set(settings.accounts)
         for name in sorted(used):
             acct = settings.accounts[name]
             for alts in PUBLISHERS[acct.platform].secrets_needed(acct):
@@ -86,6 +94,15 @@ def run(settings: Settings, secrets: Secrets, state: State, *, now: datetime | N
 
         if dry_run:
             log(f"WOULD POST {label}")
+            continue
+
+        acct = settings.accounts[t.account]
+        missing = [alts[0] for alts in pub.secrets_needed(acct) if not secrets.has(*alts)]
+        if missing:
+            # Not connected yet: skip quietly rather than fail every run. It stays pending,
+            # so it still posts if the keys are added before max_late_hours passes.
+            log(f"WAITING {label}: account not connected yet (missing {', '.join(missing)})")
+            report.append(f"⏸️ {label}: not connected yet (add {', '.join(missing)})")
             continue
 
         log(f"POSTING {label}")
