@@ -1,5 +1,7 @@
 # Social Autopilot
 
+
+
 This tool posts to **YouTube, X (Twitter) and Instagram** on a schedule. It runs free on
 GitHub Actions, so your computer can stay off. You write each post as a small text file,
 push it to GitHub, and the post goes out at the time you set.
