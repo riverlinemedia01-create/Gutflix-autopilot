@@ -1,0 +1,4 @@
+media/drive/
+__pycache__/
+.pytest_cache/
+*.part

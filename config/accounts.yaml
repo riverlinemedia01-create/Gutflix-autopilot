@@ -1,0 +1,75 @@
+# Every account the tool can post to.
+#
+# Each account's secrets live in GitHub (Settings > Secrets and variables > Actions),
+# named with its secret_prefix. The README lists exactly which ones each platform needs.
+
+timezone: Asia/Kolkata            # times in posts/ without a zone are read in this zone
+
+# Instagram fetches images and videos from a public link. Put the same media/
+# files somewhere public and set the base link here (README: "Instagram media hosting").
+# A file media/launch.mp4 is then fetched from  <media_base_url>launch.mp4
+media_base_url: ""                # e.g. https://raw.githubusercontent.com/YOUR-NAME/gutflix-media/main/
+
+max_late_hours: 12                # skip (don't post) anything more than this late
+max_attempts: 3                   # tries before a post is marked failed
+instagram_api_version: v27.0
+
+accounts:
+  gutflix-youtube:
+    platform: youtube
+    secret_prefix: GUTFLIX_YT
+  gutflix-x:
+    platform: x
+    secret_prefix: GUTFLIX_X
+  gutflix-instagram:
+    platform: instagram
+    secret_prefix: GUTFLIX_IG
+
+  # Adding a profile later is three lines plus its secrets, for example:
+  # brand2-instagram:
+  #   platform: instagram
+  #   secret_prefix: BRAND2_IG
+
+# Daily Shorts from Google Drive: one new Short a day, taken from these sources in order.
+# Needs the GOOGLE_API_KEY secret, and each folder shared as "Anyone with the link".
+drive_daily:
+  enabled: true
+  time: "18:30"                       # each day, in the timezone above
+  accounts: [gutflix-instagram, gutflix-x]   # Reels + X videos for now; add gutflix-youtube for Shorts
+  sources:
+    # 1) Myth Court: only the Shorts subfolders ("Shorts for ep 1", "Shorts ep 2", ...).
+    #    The full episodes at the top of this folder are never used. New "Shorts ep N"
+    #    subfolders are picked up automatically, in episode order.
+    - series: Myth Court
+      hashtags: "#MythCourt #GutHealth"
+      folder_id: 182taAiaVGGbhkqGWwBsMF_CmI4Ukxjuo
+      scan: subfolders
+      subfolder_filter: shorts
+    # 2) Gut Detective: "Gut detective ..." subfolders of the Gutflix folder. That folder is
+    #    private right now, so until you share it, only the ep1 folder below is read.
+    - series: Gut Detective
+      hashtags: "#GutDetective #GutHealth"
+      folder_id: 149rvuve5_Tu8xvuAXvJbKrZIYFFLlBou     # "Gutflix"
+      scan: subfolders
+      subfolder_filter: gut detective
+      also_folders: [1BV6qDqBLvRRED52g6t4horqmSxwzVD0q]  # "Gut detective shorts ep1"
+
+  max_seconds: 180                    # skip anything longer than a Short
+  max_size_mb: 200                    # skip anything this big (full episodes)
+
+  # Wording. {title} = first line of a .txt with the same name as the video if there is one;
+  # otherwise the file name, or generic_title when the name is a camera name like VID_2026...
+  # {text} = the whole .txt (or the title). Also: {series} {episode} {part} {hashtags} {n} {date}
+  generic_title: "{series} Ep {episode} | Part {part}"
+  youtube_title: "{title} #Shorts"
+  youtube_description: "{text}\n\n{hashtags} #Shorts"
+  youtube_tags: [gutflix, gut health, shorts]
+  youtube_privacy: public
+  instagram_caption: "{text}\n\n{hashtags} #reels"
+  x_text: "{title} {hashtags}"
+
+# Groups let one post target many accounts at once.
+groups:
+  gutflix-all: [gutflix-youtube, gutflix-x, gutflix-instagram]
+  all-x: [gutflix-x]
+  all-instagram: [gutflix-instagram]

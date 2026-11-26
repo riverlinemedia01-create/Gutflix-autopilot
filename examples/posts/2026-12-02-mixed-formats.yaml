@@ -1,0 +1,37 @@
+# Different formats on each platform, plus a staggered time and a group target.
+# A file can hold several posts separated by ---
+
+id: 2026-12-02-behind-the-scenes
+publish_at: 2026-12-02 12:00
+targets:
+  - account: gutflix-instagram
+    type: carousel
+    media: [media/bts-1.jpg, media/bts-2.jpg, media/bts-3.jpg]   # JPEG only for Instagram
+    caption: "Behind the scenes from day 1 📸 #gutflix"
+
+  - account: all-x                       # a group: posts to every account in it
+    publish_at: 2026-12-02 12:30         # this target goes out 30 minutes later
+    text: "A few frames from the set 📸"
+    media: [media/bts-1.jpg, media/bts-2.jpg]
+---
+id: 2026-12-03-text-thread
+publish_at: 2026-12-03 09:00
+targets:
+  - account: gutflix-x
+    text: "3 things we learned making Season 2 🧵"
+    thread:
+      - "1. Shoot more B-roll than you think you need."
+      - "2. Sound matters more than the camera."
+      - "3. Post the bloopers. People love them."
+---
+id: 2026-12-04-long-video
+publish_at: 2026-12-04T20:00:00+05:30
+targets:
+  - account: gutflix-youtube
+    video: media/episode-1.mp4
+    title: "Gutflix S2E1 | Full Episode"
+    description: "The full first episode of Season 2."
+    privacy: public
+  - account: gutflix-instagram
+    type: story
+    media: [media/episode-1-teaser.mp4]

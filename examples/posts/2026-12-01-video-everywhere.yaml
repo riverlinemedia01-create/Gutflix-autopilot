@@ -1,0 +1,28 @@
+# One video, posted to all three Gutflix accounts with platform-specific wording.
+# Copy this into posts/ and change it. Files in examples/ are never posted.
+
+id: 2026-12-01-trailer
+publish_at: 2026-12-01 18:30          # Asia/Kolkata (from config) unless you add a zone
+
+targets:
+  - account: gutflix-youtube
+    video: media/trailer.mp4
+    title: "Gutflix Season 2 | Official Trailer #Shorts"
+    description: |
+      Season 2 lands this Friday.
+      Follow for more: #gutflix #trailer
+    tags: [gutflix, trailer, season 2]
+    privacy: public                     # public | unlisted | private
+    thumbnail: media/trailer-thumb.jpg  # optional
+
+  - account: gutflix-x
+    text: "Season 2 trailer is here. Friday. 🎬"
+    media: [media/trailer.mp4]
+    thread:                              # optional replies under the first post
+      - "Which character are you most excited to see back?"
+
+  - account: gutflix-instagram
+    type: reel                           # image | carousel | reel | story
+    media: [media/trailer.mp4]
+    caption: "Season 2. This Friday. 🎬 #gutflix #trailer"
+    cover: media/trailer-thumb.jpg       # optional

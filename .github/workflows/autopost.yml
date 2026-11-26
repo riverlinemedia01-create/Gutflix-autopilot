@@ -1,0 +1,78 @@
+name: Autopost
+
+on:
+  schedule:
+    # Every 30 minutes: ~1,500 Actions minutes a month, inside the free plan's 2,000 for
+    # private repos. With GitHub Pro (3,000 min) you can use "*/15 * * * *" instead.
+    # GitHub may start a scheduled run a few minutes late.
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (show what would post, post nothing)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write                  # to commit state/posted.json
+
+concurrency:
+  group: autopost                  # never two runs at once, so nothing double-posts
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Schedule today's Drive video
+        env:
+          SECRETS_JSON: ${{ toJSON(secrets) }}
+        run: python -m autopost drive-sync
+
+      # Optional: copies media/ to a public Cloudflare R2 bucket so Instagram can fetch it.
+      # Skipped unless the R2_* secrets exist (README, "Instagram media hosting").
+      - name: Sync media for Instagram
+        if: ${{ !cancelled() }}
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          if [ -z "$R2_BUCKET" ]; then echo "R2 not configured, skipping"; exit 0; fi
+          aws s3 sync media/ "s3://$R2_BUCKET/" --exclude ".gitkeep" \
+            --endpoint-url "https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com" --only-show-errors
+
+      - name: Post what's due
+        if: ${{ !cancelled() }}         # still post other things if the Drive step failed
+        env:
+          SECRETS_JSON: ${{ toJSON(secrets) }}   # every repo secret, so new accounts need no workflow edits
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python -m autopost run --dry-run
+          else
+            python -m autopost run
+          fi
+
+      - name: Save what was posted
+        if: always()
+        run: |
+          git config user.name  "autopost-bot"
+          git config user.email "autopost-bot@users.noreply.github.com"
+          git add state/ posts/drive/ 2>/dev/null || git add state/
+          if ! git diff --cached --quiet; then
+            git commit -m "autopost: update state [skip ci]"
+            git pull --rebase --autostash
+            git push
+          fi
