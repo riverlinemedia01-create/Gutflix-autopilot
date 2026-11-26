@@ -463,3 +463,15 @@ def test_quiet_until_connected(proj, monkeypatch):
     write_post(proj, "p.yaml", "id: p\npublish_at: 2026-12-01 08:00\ntargets: [{account: xa, text: hi}]")
     assert run(s, Secrets({}), st, now=now, log=lambda *a: None) == 0                      # waits, no failure
     assert st.status("p::xa") == "pending"
+
+
+def test_x_custom_secret_names(proj):
+    cfg = CONFIG.replace("xb: {platform: twitter, secret_prefix: XB}",
+                         "xb: {platform: twitter, secret_prefix: XB, secret_names: "
+                         "{API_SECRET: CONSUMER_KEY_SECRET, ACCESS_TOKEN: ACCESS_TOKEN, ACCESS_SECRET: ACCESS_TOKEN_SECRET}}")
+    (proj / "config" / "accounts.yaml").write_text(cfg)
+    s = load_settings(proj)
+    sec = Secrets({"X_API_KEY": "k", "CONSUMER_KEY_SECRET": "cs", "ACCESS_TOKEN": "t", "ACCESS_TOKEN_SECRET": "ts"})
+    ctx = Context(s, sec, s.accounts["xb"], lambda *a: None)
+    assert PUBLISHERS["x"]._creds(ctx) == ("k", "cs", "t", "ts")
+    assert all(sec.has(*alts) for alts in PUBLISHERS["x"].secrets_needed(s.accounts["xb"]))

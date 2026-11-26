@@ -37,10 +37,19 @@ def _media_kind(ref: str) -> str:
 class X(Publisher):
     platform = "x"
 
-    def secrets_needed(self, account):
+    KEYS = ("API_KEY", "API_SECRET", "ACCESS_TOKEN", "ACCESS_SECRET")
+
+    def _names(self, account, key) -> tuple[str, ...]:
+        """Secret names to try for one key. `secret_names` in accounts.yaml can point a key at
+        any GitHub secret name, e.g. ACCESS_SECRET: ACCESS_TOKEN_SECRET."""
+        custom = (account.options.get("secret_names") or {}).get(key)
+        if custom:
+            return (str(custom),)
         p = account.secret_prefix
-        return [(f"{p}_API_KEY", "X_API_KEY"), (f"{p}_API_SECRET", "X_API_SECRET"),
-                (f"{p}_ACCESS_TOKEN",), (f"{p}_ACCESS_SECRET",)]
+        return (f"{p}_{key}", f"X_{key}") if key.startswith("API_") else (f"{p}_{key}",)
+
+    def secrets_needed(self, account):
+        return [self._names(account, k) for k in self.KEYS]
 
     def validate(self, t, settings):
         f, errs = t.fields, []
@@ -76,9 +85,7 @@ class X(Publisher):
 
     # --- signing -----------------------------------------------------------
     def _creds(self, ctx: Context):
-        p, s = ctx.account.secret_prefix, ctx.secrets
-        return (s.get(f"{p}_API_KEY", "X_API_KEY"), s.get(f"{p}_API_SECRET", "X_API_SECRET"),
-                s.get(f"{p}_ACCESS_TOKEN"), s.get(f"{p}_ACCESS_SECRET"))
+        return tuple(ctx.secrets.get(*self._names(ctx.account, k)) for k in self.KEYS)
 
     def _auth(self, creds, method, url):
         ck, cs, tk, ts = creds
