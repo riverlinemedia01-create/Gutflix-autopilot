@@ -1,0 +1,21 @@
+# Made automatically from Google Drive. Edit it before 18:30 to change today's wording, or set enabled: false to skip.
+id: drive-2026-11-27
+publish_at: 2026-11-27 18:30
+drive_file:
+  id: 1ZIE1Li6RHcYMQzVUvLJ5uK8dZlW-nD36
+  name: Shorts 2.mp4
+  folder: Shorts for ep 1
+  series: Myth Court
+targets:
+- account: gutflix-instagram
+  type: reel
+  media:
+  - drive:1ZIE1Li6RHcYMQzVUvLJ5uK8dZlW-nD36.mp4
+  caption: 'Myth Court Ep 1 | Part 2
+
+
+    #MythCourt #GutHealth #reels'
+- account: gutflix-x
+  text: 'Myth Court Ep 1 | Part 2 #MythCourt #GutHealth'
+  media:
+  - drive:1ZIE1Li6RHcYMQzVUvLJ5uK8dZlW-nD36.mp4

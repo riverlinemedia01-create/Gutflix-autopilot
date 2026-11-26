@@ -1,9 +1,16 @@
 {
   "days": {
-    "2026-11-26": "drive-2026-11-26"
+    "2026-11-26": "drive-2026-11-26",
+    "2026-11-27": "drive-2026-11-27"
   },
   "skipped": {},
   "used": {
+    "1ZIE1Li6RHcYMQzVUvLJ5uK8dZlW-nD36": {
+      "day": "2026-11-27",
+      "folder": "Shorts for ep 1",
+      "name": "Shorts 2.mp4",
+      "post": "drive-2026-11-27"
+    },
     "1gVTJ_tSw-mme8L61sldfmeBpN4QXtf41": {
       "day": "2026-11-26",
       "folder": "Shorts for ep 1",
